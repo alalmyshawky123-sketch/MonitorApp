@@ -12,10 +12,13 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Unzip Project Archive
+    - name: List Repository Contents
+      run: ls -la
+
+    - name: Unzip Archive if exists
       run: |
-        if [ -f "MonitorApp.zip" ]; then
-          unzip MonitorApp.zip -d extracted_project
+        if ls *.zip 1> /dev/null 2>&1; then
+          unzip *.zip -d extracted_files
         fi
 
     - name: Set up JDK 17
@@ -24,18 +27,17 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Find and Build with Gradle
+    - name: Locate and Build APK
       run: |
-        # البحث عن مجلد المشروع الذي يحتوي على gradlew
-        GRADLEW_PATH=$(find . -name "gradlew" -type f -print -quit)
-        if [ -n "$GRADLEW_PATH" ]; then
-          PROJECT_DIR=$(dirname "$GRADLEW_PATH")
-          echo "Found gradlew in: $PROJECT_DIR"
+        find . -name "gradlew" -exec chmod +x {} +
+        GRADLEW_FILE=$(find . -name "gradlew" -print -quit)
+        if [ -n "$GRADLEW_FILE" ]; then
+          PROJECT_DIR=$(dirname "$GRADLEW_FILE")
+          echo "Building from directory: $PROJECT_DIR"
           cd "$PROJECT_DIR"
-          chmod +x gradlew
           ./gradlew assembleDebug
         else
-          echo "gradlew not found, searching for build.gradle..."
+          echo "Error: gradlew not found anywhere in the repository."
           exit 1
         fi
 
@@ -45,4 +47,3 @@ jobs:
         name: app-debug
         path: |
           **/build/outputs/apk/debug/*.apk
-
